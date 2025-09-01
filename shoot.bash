@@ -172,26 +172,35 @@ summary() {
     | [
         .tool,
         .time,
-        .validation == ""
-      ] +
-      (
-				.sbom.components
-				| [
-						.,
-						map(select(.licenses != null)),
-						map(select(.type == "library")),
-						map(select(.type == "application")),
-						map(select(.type == "file")),
-						map(select(.type == "operating-system")),
-						map(select(.type == "framework")),
-						map(select(.type == "container")),
-						map(select(.type == "device"))
-					]
-				| map(length)
-      )
-		| @tsv
-		' |
-		column -t -s $'\t' -N 'tool,time (s),valid,total,licenses,library,application,file,operating-system,framework,container,device' >&2
+        (.validation == "")
+      ]
+      + (
+        .sbom.components
+        | [
+            .,
+            map(select(.licenses != null)),
+            map(select(.type == "library")),
+            map(select(.type == "application")),
+            map(select(.type == "framework")),
+            map(select(.type == "file")),
+            map(select(.type == "operating-system")),
+            map(select(.type == "container")),
+            map(select(.type == "device"))
+          ]
+        | map(length)
+      ) as $counts
+      | $counts,
+        (
+          ["", "", "", ""]
+          + (
+            $counts[4:]
+            | map( . * 100 / $counts[3] | round | tostring + "%")
+          )
+        )
+      | @tsv
+  ' |
+		column -t -s $'\t' -N 'tool,time (s),valid,total,licenses,library,application,framework,file,operating-system,container,device' |
+		format-table
 }
 
 info() {
@@ -229,6 +238,27 @@ format-command() {
 	cat - | tr $'\n\t' ' ' | tr -s ' '
 	tput sgr0
 	echo
+} >&2
+
+format-table() {
+	local i=0 line
+	while IFS= read -r line
+	do
+		if ((i++ == 0))
+		then
+			printf "%s\n" "$line"
+		else
+			if ((i / 2 % 2))
+			then
+				tput setab 236
+				printf "%s" "$line"
+				tput sgr0
+			else
+				printf "%s" "$line"
+			fi
+			echo
+		fi
+	done
 } >&2
 
 if [[ $1 == "--summary" ]]
