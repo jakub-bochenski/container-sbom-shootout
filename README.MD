@@ -22,6 +22,8 @@ The following tools are compared:
 - [Tern](https://github.com/tern-tools/tern): Software composition analysis tool and Python library that generates SBOMs
   for container images and Dockerfiles, showing a layer-by-layer view of contents.
 
+You can find how each tool was executed at the top of [shoot.bash](shoot.bash) file.
+
 The following container images are analyzed:
 
 - Maven: `dependencytrack/apiserver:4.13.4`
@@ -30,7 +32,7 @@ The following container images are analyzed:
 - Node: `library/ghost:6.0.5`
 - Python: `tensorflow/tensorflow:2.20.0-jupyter`
 
-## Results
+# Results
 
 Results can be found in the `out` folder.
 You can also re-run the tests by executing `./sample.sh`.
