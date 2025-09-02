@@ -1,14 +1,13 @@
-# SBOM container tools Shootout
+# SBOM Container Tools Shootout
 
-Comparison of different tools for generating CycloneDX SBOMs for container images.
+Comparison of tools for generating CycloneDX SBOMs from container images.
 
-The tools are compared based on the number of identified components and licenses.
-Tools that do not generate valid CycloneDX SBOMs are not investigated further.
-If possible, the tools should be run from a Docker container.
+Tools are evaluated based on the number of identified components and licenses. Only tools that generate valid CycloneDX
+SBOMs are included in the analysis. Where possible, tools are run from Docker containers.
 
-The following tools are compared:
+## Tools Compared
 
-- [Syft](https://github.com/anchore/syft): CLI tool and library for generating a Software Bill of Materials (SBOM) from
+- [Syft](https://github.com/anchore/syft): CLI tool and library for generating a SBOM from
   container images and filesystems. Supports multiple formats and languages.
 - [Trivy](https://github.com/aquasecurity/trivy): Security scanner that detects vulnerabilities, misconfigurations,
   secrets, and generates SBOMs for containers, Kubernetes, code repositories, and cloud environments.
@@ -22,9 +21,9 @@ The following tools are compared:
 - [Tern](https://github.com/tern-tools/tern): Software composition analysis tool and Python library that generates SBOMs
   for container images and Dockerfiles, showing a layer-by-layer view of contents.
 
-You can find how each tool was executed at the top of [shoot.bash](shoot.bash) file.
+Execution details for each tool are at the top of the [shoot.bash](shoot.bash) file.
 
-The following container images are analyzed:
+## Container Images Analyzed
 
 - Maven: `dependencytrack/apiserver:4.13.4`
 - Gradle: `library/elasticsearch:8.17.10`
@@ -34,39 +33,34 @@ The following container images are analyzed:
 
 # Results
 
-Results can be found in the `out` folder.
-You can also re-run the tests by executing `./sample.sh`.
+Results are in the `out` folder. Re-run tests with `./sample.sh`.
 
-If you want to analyze a single image use `./shoot.sh <image>`.
+To analyze a single image, use `./shoot.sh <image>`.
 
-## Result summary
+## Result Summary
 
 ![Result summary](results.png)
 
 ## Syft
 
-Syft identifies the most components of all tools.
-It also identifies the most licenses for the found components.
+- Syft identifies the most components and licenses of all tools.
 
 ## Trivy
 
-Trivy identifies a little less components than Syft.
-Trivy does well identifing licenses for Python and Node packages,
-but only identifies a few licenses for Java or Go packages.
+- Trivy identifies slightly fewer components than Syft. It performs well for Python and Node license detection, but only
+  finds a few licenses for Java or Go packages.
 
-Latest Trivy version (0.65.0) has a [bug](https://github.com/aquasecurity/trivy/issues/9300)
-causing it to generate invalid CycloneDX SBOMs.
-Version 0.64.1 was used for this comparison.
+- Latest Trivy version (0.65.0) has a [bug](https://github.com/aquasecurity/trivy/issues/9300) causing it to generate
+  invalid CycloneDX SBOMs. Version 0.64.1 was used for this comparison.
 
 ## Sbomgen
 
-Sbomgen is significantly faster than the other tools.
+- Sbomgen is significantly faster than the other tools.
 
-Sbomgen generates multiple entries for a single component.
-This inflates the component count with duplicate entries.
+- Generates multiple entries for a single component, inflating the component count with duplicates.
 
-E.g. Sbomgen treats Maven metadata files (pom.xml, pom.properties) as individual
-components. For logback-classic it would generate 5 components:
+- Treats Maven metadata files (pom.xml, pom.properties) as individual components. For example, for logback-classic it
+  generates 5 components:
 
 ```
 /opt/owasp/dependency-track/dependency-track-apiserver.jar/META-INF/maven/ch.qos.logback/logback-classic/pom.properties
@@ -76,10 +70,8 @@ components. For logback-classic it would generate 5 components:
 /opt/owasp/dependency-track/dependency-track-apiserver.jar/WEB-INF/lib/logback-classic-1.5.18.jar/META-INF/maven/ch.qos.logback/logback-classic/pom.xml
 ```
 
-It generates invalid PURLs for some of those entries, e.g. `pkg:maven/logback-classic@1.5.18`
-
-It also generates multiple entries for different versions of the same component,
-even though only one version is actually present in the container.
+- Generates invalid PURLs for some of the above entries, e.g. `pkg:maven/logback-classic@1.5.18`
+- Lists multiple versions of the same component, even if only one is present:
 
 ```
 ch.qos.logback:logback-classic  1.2.0
@@ -89,32 +81,27 @@ ch.qos.logback:logback-classic  1.5.18
 ch.qos.logback:logback-classic  1.5.6
 ```
 
-Sbomgen is not open source, and there seems to be no way to report issues or
-request features (execept maybe via AWS support).
-
-## Docker scout
-
-Docker scout does not generate a [valid CycloneDX SBOM](https://github.com/docker/scout-cli/issues/190).
+- Not open source
+- Unclear how to report issues or request features (AWS support?)
 
 ## Cdxgen
 
-Cdxgen identifies the least number of components of all tools (except for Maven, where Tern does worse).
-It usually generates a lot of `file` components, which are not useful for license compliance or vulnerability detection.
+- Generates many `file` components, which are not useful for license compliance or vulnerability detection.
+- If you discount `file` components, cdxgen identifies the fewest components for Python and Go, and is second worst to
+  Tern for Java and Node.
+- Only identifies licenses for Node packages. Using `FETCH_LICENSE=true` or `--profile license-compliance` results in
+  empty BOM.
+- Docker image is [unable to scan images](https://github.com/CycloneDX/cdxgen/issues/2205); requires local installation
+  and multiple dependencies.
+- Least user-friendly tool (unusual argument parsing, explicit option needed for non-zero exit code on failure).
 
-Cdxgen seems unable to indetify licenses for any packages other than Node packages.
-Trying to use `FETCH_LICENSE=true` or `--profile license-compliance` result in empty BOM.
+## Docker Scout
 
-Cdxgen docker image is [unable to scan images](https://github.com/CycloneDX/cdxgen/issues/2205).
-You are forced to use a local installation (which in turn requires installing its multiple dependencies).
-
-Overall cdxgen looks to be the least user-friendly tool (e.g. quirky argument parsing,
-having to use an explicit option for it to return non-zero exit code on failure).
+- Docker Scout does not generate a [valid CycloneDX SBOM](https://github.com/docker/scout-cli/issues/190).
 
 ## Tern
 
-Tern does not generate a valid CycloneDX SBOM.
-It also takes about 10 times as long as the other tools, e.g. it took ~20 minutes to analyze the python image.
-
-Docker image for tern [does not build correctly](https://github.com/tern-tools/tern/issues/1256).
-There is an option to use `scancode`, but I was unable
-to [get it working](https://github.com/tern-tools/tern/issues/1258).
+- Does not generate a valid CycloneDX SBOM.
+- Takes about 10 times longer than other tools (e.g. ~20 minutes for the Python image).
+- Docker image [does not build correctly](https://github.com/tern-tools/tern/issues/1256).
+- Option to use `scancode`, but unable to [get it working](https://github.com/tern-tools/tern/issues/1258).
