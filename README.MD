@@ -87,6 +87,11 @@ ch.qos.logback:logback-classic  1.5.6
 ## Cdxgen
 
 - Generates many `file` components, which are not useful for license compliance or vulnerability detection.
+> [additional explanation](https://github.com/CycloneDX/cdxgen/discussions/2223#discussioncomment-14308308):
+> cdxgen sees a file, can calculate its hash (hashes are non-reproducible), but lacks a lookup database. There is some
+> logic in cdxgen to utilise the OS package manager to identify which package provides a given file. This is used in case
+> of an OBOM. In case of a container image, however, the host could be different and we cannot execute these commands
+> without running the image in an interactive manner
 - If you discount `file` components, cdxgen identifies the fewest components for Python and Go, and is second worst to
   Tern for Java and Node.
 - Only identifies licenses for Node packages. Using `FETCH_LICENSE=true` or `--profile license-compliance` results in
